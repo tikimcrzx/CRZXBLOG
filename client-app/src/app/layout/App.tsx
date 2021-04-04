@@ -5,6 +5,7 @@ import NavBar from './NavBar';
 import ActivityDashboard from '../../features/activities/dashboard/ActivityDashboard';
 import { v4 as uuid } from 'uuid';
 import agent from '../api/agent';
+import LoadingComponent from './LoadingComponent';
 
 function App() {
   const [activities, setActivities] = useState<IActivity[]>([]);
@@ -12,6 +13,8 @@ function App() {
     IActivity | undefined
   >(undefined);
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmiting] = useState(false);
 
   useEffect(() => {
     agent.Activities.list().then((response) => {
@@ -21,6 +24,7 @@ function App() {
         activities.push(activity);
       });
       setActivities(activities);
+      setLoading(false);
     });
   }, []);
 
@@ -42,19 +46,37 @@ function App() {
   }
 
   function handleCreateOrEditActivity(activity: IActivity) {
-    activity.id
-      ? setActivities([
+    setSubmiting(true);
+    if (activity.id) {
+      agent.Activities.update(activity).then(() => {
+        setActivities([
           ...activities.filter((x) => x.id !== activity.id),
           activity,
-        ])
-      : setActivities([...activities, { ...activity, id: uuid() }]);
-    setEditMode(false);
-    setSelectedActivity(activity);
+        ]);
+        setSelectedActivity(activity);
+        setEditMode(false);
+        setSubmiting(false);
+      });
+    } else {
+      activity.id = uuid();
+      agent.Activities.create(activity).then(() => {
+        setActivities([...activities, activity]);
+        setSelectedActivity(activity);
+        setEditMode(false);
+        setSubmiting(false);
+      });
+    }
   }
 
   function handleDeleteActivity(id: string) {
-    setActivities([...activities.filter((x) => x.id !== id)]);
+    setSubmiting(true);
+    agent.Activities.delete(id).then(() => {
+      setActivities([...activities.filter((x) => x.id !== id)]);
+      setSubmiting(false);
+    });
   }
+
+  if (loading) return <LoadingComponent content="Loading app" />;
 
   return (
     <>
@@ -70,6 +92,7 @@ function App() {
           closeForm={handleFormClose}
           createOrEdit={handleCreateOrEditActivity}
           deleteActivity={handleDeleteActivity}
+          submitting={submitting}
         />
       </Container>
     </>
