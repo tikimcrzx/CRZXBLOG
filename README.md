@@ -1,6 +1,6 @@
 # CrzxBlog Personal App
 
-This is the repository for my e-commerce project.
+This is the repository for my Personal App project.
 
 ### Stack
 
